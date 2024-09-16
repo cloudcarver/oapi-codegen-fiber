@@ -110,7 +110,7 @@ const securityMiddlewareTemplate = `package {{.PackageName}}
 
 import "github.com/gofiber/fiber/v2"
 
-type AuthFunc func(rules ...string) func(c *fiber.Ctx) error
+type AuthFunc func(c *fiber.Ctx, rules ...string) error
 
 func RegisterAuthFunc(app *fiber.App, f AuthFunc) {
 	{{range .SecurityRequirements}}
@@ -118,14 +118,14 @@ func RegisterAuthFunc(app *fiber.App, f AuthFunc) {
 		if c.Get("Authorization") == "" {
 			return c.SendStatus(fiber.StatusUnauthorized)
 		} {{if eq (len $value) 0}}
-		if err := f()(c); err != nil {
+		if err := f(c); err != nil {
 			return c.Status(fiber.StatusForbidden).SendString(err.Error())
 		}
 		{{else}}
 		rules := []string{
 			{{range $value}}"{{.}}", {{end}}
 		}
-		if err := f(rules...)(c); err != nil {
+		if err := f(c, rules...); err != nil {
 			return c.Status(fiber.StatusForbidden).SendString(err.Error())
 		}{{end}}{{end}}{{end}}
 		return c.Next()

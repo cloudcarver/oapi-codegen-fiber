@@ -2,7 +2,7 @@ package main
 
 import "github.com/gofiber/fiber/v2"
 
-type AuthFunc func(rules ...string) func(c *fiber.Ctx) error
+type AuthFunc func(c *fiber.Ctx, rules ...string) error
 
 func RegisterAuthFunc(app *fiber.App, f AuthFunc) {
 	
@@ -13,7 +13,7 @@ func RegisterAuthFunc(app *fiber.App, f AuthFunc) {
 		rules := []string{
 			"admin:write", "admin:read", 
 		}
-		if err := f(rules...)(c); err != nil {
+		if err := f(c, rules...); err != nil {
 			return c.Status(fiber.StatusForbidden).SendString(err.Error())
 		}
 		return c.Next()
@@ -22,7 +22,7 @@ func RegisterAuthFunc(app *fiber.App, f AuthFunc) {
 		if c.Get("Authorization") == "" {
 			return c.SendStatus(fiber.StatusUnauthorized)
 		} 
-		if err := f()(c); err != nil {
+		if err := f(c); err != nil {
 			return c.Status(fiber.StatusForbidden).SendString(err.Error())
 		}
 		
@@ -35,7 +35,7 @@ func RegisterAuthFunc(app *fiber.App, f AuthFunc) {
 		rules := []string{
 			"admin:read", 
 		}
-		if err := f(rules...)(c); err != nil {
+		if err := f(c, rules...); err != nil {
 			return c.Status(fiber.StatusForbidden).SendString(err.Error())
 		}
 		return c.Next()
