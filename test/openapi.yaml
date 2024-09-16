@@ -1,0 +1,34 @@
+openapi: "3.1.0"
+
+info:
+  version: 1.0.0
+  title: Test
+  description: |
+    This is a test API.
+
+servers:
+- url: /api/v1
+
+paths:
+  /test0:
+    get:
+      responses:
+        '200':
+          description: OK
+      security:
+        - BearerAuth: [admin:write, admin:read]
+    post:
+      responses:
+        '200':
+          description: OK
+      security:
+        - BearerAuth: []
+        - API: []
+
+  /test2:
+    get:
+      responses:
+        '200':
+          description: OK
+      security:
+        - BearerAuth: [admin:read]
