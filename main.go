@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"flag"
+	"fmt"
 	"html/template"
 	"net/url"
 	"os"
@@ -15,13 +16,20 @@ var (
 	specPath    string
 	outPath     string
 	packageName string
+	version     bool
 )
 
 func main() {
 	flag.StringVar(&specPath, "path", "", "Path to the OpenAPI spec file")
 	flag.StringVar(&outPath, "out", "", "Path to the output file")
 	flag.StringVar(&packageName, "package", "main", "Package name")
+	flag.BoolVar(&version, "version", false, "show version")
 	flag.Parse()
+
+	if version {
+		fmt.Println("v0.3.0")
+		return
+	}
 
 	if specPath == "" {
 		panic("specPath is required")
