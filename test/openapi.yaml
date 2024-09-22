@@ -32,3 +32,11 @@ paths:
           description: OK
       security:
         - BearerAuth: [admin:read]
+
+  /user/{id}:
+    get:
+      responses:
+        '200':
+          description: OK
+      security:
+        - BearerAuth: [user:read]

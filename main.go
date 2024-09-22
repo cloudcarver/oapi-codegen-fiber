@@ -91,7 +91,7 @@ func parseSecurityRequirements(doc *openapi3.T) []SecurityRequirement {
 				continue
 			}
 			rq := SecurityRequirement{
-				Path:   baseURL + path,
+				Path:   replaceURLParameters(baseURL + path),
 				Method: toCamelCase(method),
 				Rules:  map[string][]string{},
 			}
@@ -150,4 +150,8 @@ func toCamelCase(str string) string {
 		return str
 	}
 	return strings.ToUpper(str[:1]) + strings.ToLower(str[1:])
+}
+
+func replaceURLParameters(path string) string {
+	return strings.ReplaceAll(strings.ReplaceAll(path, "{", ":"), "}", "")
 }
