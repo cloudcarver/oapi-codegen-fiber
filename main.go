@@ -7,6 +7,7 @@ import (
 	"html/template"
 	"net/url"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/getkin/kin-openapi/openapi3"
@@ -111,6 +112,9 @@ func parseSecurityRequirements(doc *openapi3.T) []SecurityRequirement {
 			rtn = append(rtn, rq)
 		}
 	}
+	sort.Slice(rtn, func(i, j int) bool {
+		return rtn[i].Path < rtn[j].Path
+	})
 	return rtn
 }
 
@@ -122,7 +126,7 @@ type AuthFunc func(c *fiber.Ctx, rules ...string) error
 
 func RegisterAuthFunc(app *fiber.App, f AuthFunc) {
 	{{range .SecurityRequirements}}
-	app.{{.Method}}("{{.Path}}", func(c *fiber.Ctx) error { {{range $key, $value := .Rules}}{{if eq $key "BearerAuth"}}
+	app.{{.Method}}("{{.Path}}", func(c *fiber.Ctx) error { {{range $key, $value := .Rules}}{{if or (eq $key "BearerAuth") (eq $key "bearerAuth")}}
 		if c.Get("Authorization") == "" {
 			return c.SendStatus(fiber.StatusUnauthorized)
 		} {{if eq (len $value) 0}}

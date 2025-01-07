@@ -40,6 +40,16 @@ func RegisterAuthFunc(app *fiber.App, f AuthFunc) {
 		}
 		return c.Next()
 	})
+	app.Get("/api/v1/test3", func(c *fiber.Ctx) error { 
+		if c.Get("Authorization") == "" {
+			return c.SendStatus(fiber.StatusUnauthorized)
+		} 
+		if err := f(c); err != nil {
+			return c.Status(fiber.StatusForbidden).SendString(err.Error())
+		}
+		
+		return c.Next()
+	})
 	app.Get("/api/v1/user/:id", func(c *fiber.Ctx) error { 
 		if c.Get("Authorization") == "" {
 			return c.SendStatus(fiber.StatusUnauthorized)

@@ -33,6 +33,14 @@ paths:
       security:
         - BearerAuth: [admin:read]
 
+  /test3:
+    get:
+      responses:
+        '200':
+          description: OK
+      security:
+        - bearerAuth: []
+
   /user/{id}:
     get:
       responses:
