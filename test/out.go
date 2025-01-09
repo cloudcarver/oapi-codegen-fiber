@@ -14,7 +14,7 @@ func RegisterAuthFunc(app *fiber.App, f AuthFunc) {
 			"admin:write", "admin:read", 
 		}
 		if err := f(c, rules...); err != nil {
-			return c.Status(fiber.StatusForbidden).SendString(err.Error())
+			return err
 		}
 		return c.Next()
 	})
@@ -23,7 +23,7 @@ func RegisterAuthFunc(app *fiber.App, f AuthFunc) {
 			return c.SendStatus(fiber.StatusUnauthorized)
 		} 
 		if err := f(c); err != nil {
-			return c.Status(fiber.StatusForbidden).SendString(err.Error())
+			return err
 		}
 		
 		return c.Next()
@@ -36,7 +36,7 @@ func RegisterAuthFunc(app *fiber.App, f AuthFunc) {
 			"admin:read", 
 		}
 		if err := f(c, rules...); err != nil {
-			return c.Status(fiber.StatusForbidden).SendString(err.Error())
+			return err
 		}
 		return c.Next()
 	})
@@ -45,7 +45,7 @@ func RegisterAuthFunc(app *fiber.App, f AuthFunc) {
 			return c.SendStatus(fiber.StatusUnauthorized)
 		} 
 		if err := f(c); err != nil {
-			return c.Status(fiber.StatusForbidden).SendString(err.Error())
+			return err
 		}
 		
 		return c.Next()
@@ -58,7 +58,7 @@ func RegisterAuthFunc(app *fiber.App, f AuthFunc) {
 			"user:read", 
 		}
 		if err := f(c, rules...); err != nil {
-			return c.Status(fiber.StatusForbidden).SendString(err.Error())
+			return err
 		}
 		return c.Next()
 	})
