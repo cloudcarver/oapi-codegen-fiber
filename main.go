@@ -131,7 +131,7 @@ func RegisterAuthFunc(app *fiber.App, f AuthFunc) {
 			return c.SendStatus(fiber.StatusUnauthorized)
 		} {{if eq (len $value) 0}}
 		if err := f(c); err != nil {
-			return c.Status(fiber.StatusForbidden).SendString(err.Error())
+			return err
 		}
 		{{else}}
 		rules := []string{
