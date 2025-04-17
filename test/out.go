@@ -11,8 +11,8 @@ type XMiddleware struct {
 	Validator
 }
 
-func NewXMiddleware(handler ServerInterface) ServerInterface {
-	return &XMiddleware{Handler: handler}
+func NewXMiddleware(handler ServerInterface, validator Validator) ServerInterface {
+	return &XMiddleware{Handler: handler, Validator: validator}
 }
 
 // Refresh access token
