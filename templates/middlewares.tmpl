@@ -1,0 +1,23 @@
+type XMiddleware struct {
+	Handler ServerInterface
+	Validator
+}
+
+func NewXMiddleware(handler ServerInterface) ServerInterface {
+	return &XMiddleware{Handler: handler}
+}
+
+{{range .}}{{.SummaryAsComment }}
+// ({{.Method}} {{.Path}})
+func (x *XMiddleware) {{.OperationId}}(c *fiber.Ctx{{genParamArgs .PathParams}}{{if .RequiresParamObject}}, params {{.OperationId}}Params{{end}}) error {
+    if c.Get("Authorization") == "" {
+		return c.Status(fiber.StatusUnauthorized).SendString("Authorization header is required")
+	} {{if ne .OperationId ""}}
+	c.Locals("operationID", "{{.OperationId}}"){{end}}
+	{{range .SecurityDefinitions}} {{range .Scopes}}
+	if err := {{.}}; err != nil {
+	    return c.Status(fiber.StatusForbidden).SendString(err.Error())
+	} {{end}} {{end}}
+    return x.Handler.{{.OperationId}}(c{{genParamNames .PathParams}}{{if .RequiresParamObject}}, params{{end}})
+}
+{{end}}

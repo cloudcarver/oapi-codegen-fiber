@@ -1,9 +1,62 @@
-# opai-codegen-fiber
+openapi: "3.0.0"
 
-Generate Fiber middleware for Security Schemes in OpenAPI spec. 
+info:
+  version: 1.0.0
+  title: Test
+  description: |
+    This is a test API.
 
-```yaml
+servers:
+- url: /api/v1
+
 paths:
+  /test0:
+    get:
+      operationId: test0
+      responses:
+        '200':
+          description: OK
+      security:
+        - BearerAuth: []
+    post:
+      operationId: test0Post
+      responses:
+        '200':
+          description: OK
+      security:
+        - BearerAuth: []
+        - API: []
+
+  /test2:
+    get:
+      responses:
+        '200':
+          description: OK
+      security:
+        - BearerAuth: []
+
+  /test3:
+    get:
+      responses:
+        '200':
+          description: OK
+      security:
+        - BearerAuth: []
+
+  /user/{id}:
+    get:
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+      security:
+        - BearerAuth: []
+
   /clusters/{clusterId}:
     get:
       responses:
@@ -46,29 +99,4 @@ x-functions:
         type: integer
         format: int32
       description: The user ID
-```
 
-Then it will generate interfaces for `GetUserID` and `OwnCluster` in the generated code.
-
-All you need to do is implementing the business logic.
-
-## Features
- - [x] Generate fiber middleware interface for validating requests.
-
-## Usage
-
-```shell
-go install github.com/cloudcarver/opai-codegen-fiber@latest
-
-oapi-codegen-fiber --package api --path api.yaml --out my/project/dir
-```
-
-## Examples:
-
-Check out the [test](./test) directory for more examples.
-
-## Test
-
-```shell
-make gen
-```
