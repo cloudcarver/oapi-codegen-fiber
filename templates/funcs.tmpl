@@ -1,6 +1,6 @@
 type Validator interface { {{range .CheckRules}}
-    {{.Name}}({{if .UseContext}}c *fiber.Ctx, {{end}}{{genXParamArgs .Params}}) error
+    {{.Name}}({{if .UseContext}}c *fiber.Ctx{{else}}ctx context.Context{{end}}, {{genXParamArgs .Params}}) error
 {{end}} {{range .Functions}}
-    {{.Name}}({{if .UseContext}}c *fiber.Ctx, {{end}}{{genXParamArgs .Params}}) {{.Return.Schema.GoType}}
+    {{.Name}}({{if .UseContext}}c *fiber.Ctx{{else}}ctx context.Context{{end}}, {{genXParamArgs .Params}}) {{.Return.Schema.GoType}}
 {{end}}
 }
