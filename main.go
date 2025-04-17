@@ -34,7 +34,7 @@ func main() {
 	flag.Parse()
 
 	if version {
-		fmt.Println("v0.6.0")
+		fmt.Println("v0.6.1")
 		return
 	}
 
@@ -50,19 +50,32 @@ func main() {
 		packageName = "fiberx"
 	}
 
-	doc, err := getSchema(specPath)
+	code, err := generate(specPath)
 	if err != nil {
 		panic(err)
 	}
 
-	code, err := generate(doc)
-	if err != nil {
+	if err := os.WriteFile(outPath, []byte(code), 0644); err != nil {
 		panic(err)
+	}
+}
+
+func generate(specPath string) (string, error) {
+	doc, err := getSchema(specPath)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to get schema")
+	}
+
+	codegen.SetGlobalStateSpec(doc)
+
+	code, err := generateMiddlewares(doc)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to generate middlewares")
 	}
 
 	checkRules, err := generateCheckRules(doc)
 	if err != nil {
-		panic(err)
+		return "", errors.Wrap(err, "failed to generate check rules")
 	}
 
 	code = `package ` + packageName + `
@@ -73,9 +86,7 @@ import "github.com/gofiber/fiber/v2"
 
 ` + code
 
-	if err := os.WriteFile(outPath, []byte(code), 0644); err != nil {
-		panic(err)
-	}
+	return code, nil
 }
 
 func getSchema(specPath string) (*openapi3.T, error) {
@@ -94,7 +105,7 @@ type TmplVar struct {
 	PackageName string
 }
 
-func generate(doc *openapi3.T) (string, error) {
+func generateMiddlewares(doc *openapi3.T) (string, error) {
 	// Include our XTmplFuncs in the template functions
 	funcMap := template.FuncMap{}
 	for k, v := range codegen.TemplateFunctions {
