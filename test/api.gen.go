@@ -96,6 +96,9 @@ type ClientInterface interface {
 	// GetUser request
 	GetUser(ctx context.Context, clusterId int32, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// SignIn request
+	SignIn(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// Test0 request
 	Test0(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -114,6 +117,18 @@ type ClientInterface interface {
 
 func (c *Client) GetUser(ctx context.Context, clusterId int32, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetUserRequest(c.Server, clusterId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SignIn(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSignInRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -211,6 +226,33 @@ func NewGetUserRequest(server string, clusterId int32) (*http.Request, error) {
 	}
 
 	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewSignInRequest generates requests for SignIn
+func NewSignInRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/sign-in")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -406,6 +448,9 @@ type ClientWithResponsesInterface interface {
 	// GetUserWithResponse request
 	GetUserWithResponse(ctx context.Context, clusterId int32, reqEditors ...RequestEditorFn) (*GetUserResponse, error)
 
+	// SignInWithResponse request
+	SignInWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*SignInResponse, error)
+
 	// Test0WithResponse request
 	Test0WithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*Test0Response, error)
 
@@ -437,6 +482,27 @@ func (r GetUserResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetUserResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type SignInResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r SignInResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SignInResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -557,6 +623,15 @@ func (c *ClientWithResponses) GetUserWithResponse(ctx context.Context, clusterId
 	return ParseGetUserResponse(rsp)
 }
 
+// SignInWithResponse request returning *SignInResponse
+func (c *ClientWithResponses) SignInWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*SignInResponse, error) {
+	rsp, err := c.SignIn(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSignInResponse(rsp)
+}
+
 // Test0WithResponse request returning *Test0Response
 func (c *ClientWithResponses) Test0WithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*Test0Response, error) {
 	rsp, err := c.Test0(ctx, reqEditors...)
@@ -611,6 +686,22 @@ func ParseGetUserResponse(rsp *http.Response) (*GetUserResponse, error) {
 	}
 
 	response := &GetUserResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParseSignInResponse parses an HTTP response from a SignInWithResponse call
+func ParseSignInResponse(rsp *http.Response) (*SignInResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SignInResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -704,6 +795,9 @@ type ServerInterface interface {
 	// (GET /clusters/{clusterId})
 	GetUser(c *fiber.Ctx, clusterId int32) error
 
+	// (POST /sign-in)
+	SignIn(c *fiber.Ctx) error
+
 	// (GET /test0)
 	Test0(c *fiber.Ctx) error
 
@@ -740,9 +834,15 @@ func (siw *ServerInterfaceWrapper) GetUser(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, fmt.Errorf("Invalid format for parameter clusterId: %w", err).Error())
 	}
 
-	c.Context().SetUserValue(BearerAuthScopes, []string{"x.OwnCluster(c, x.GetUserID(c), clusterId)"})
+	c.Context().SetUserValue(BearerAuthScopes, []string{"x.CheckOperationID(c, operationID)", "x.OwnCluster(c, x.GetUserID(c), clusterId)"})
 
 	return siw.Handler.GetUser(c, clusterId)
+}
+
+// SignIn operation middleware
+func (siw *ServerInterfaceWrapper) SignIn(c *fiber.Ctx) error {
+
+	return siw.Handler.SignIn(c)
 }
 
 // Test0 operation middleware
@@ -792,7 +892,7 @@ func (siw *ServerInterfaceWrapper) GetUserId(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, fmt.Errorf("Invalid format for parameter id: %w", err).Error())
 	}
 
-	c.Context().SetUserValue(BearerAuthScopes, []string{})
+	c.Context().SetUserValue(BearerAuthScopes, []string{"x.CheckOperationID(c, operationID)"})
 
 	return siw.Handler.GetUserId(c, id)
 }
@@ -819,6 +919,8 @@ func RegisterHandlersWithOptions(router fiber.Router, si ServerInterface, option
 	}
 
 	router.Get(options.BaseURL+"/clusters/:clusterId", wrapper.GetUser)
+
+	router.Post(options.BaseURL+"/sign-in", wrapper.SignIn)
 
 	router.Get(options.BaseURL+"/test0", wrapper.Test0)
 

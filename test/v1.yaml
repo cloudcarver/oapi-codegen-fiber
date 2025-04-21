@@ -10,6 +10,14 @@ servers:
 - url: /api/v1
 
 paths:
+  /sign-in:
+    post:
+      operationId: signIn
+      responses:
+        '200':
+          description: OK
+      security: []
+
   /test0:
     get:
       operationId: test0
@@ -55,7 +63,8 @@ paths:
         '200':
           description: OK
       security:
-        - BearerAuth: []
+        - BearerAuth:
+            - x.CheckOperationID(c, operationID)
 
   /clusters/{clusterId}:
     get:
@@ -72,6 +81,7 @@ paths:
             format: int32
       security:
         - BearerAuth:
+            - x.CheckOperationID(c, operationID)
             - x.OwnCluster(c, x.GetUserID(c), clusterId)
 
 x-check-rules:
@@ -89,6 +99,14 @@ x-check-rules:
         schema:
           type: integer
           format: int32
+  CheckOperationID:
+    description: Check if the operation ID is in the security definitions
+    useContext: true
+    parameters:
+      - name: operationID
+        description: The operation ID
+        schema:
+          type: string
 
 x-functions:
   GetUserID:

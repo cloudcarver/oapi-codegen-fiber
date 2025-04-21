@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"sort"
+	"strings"
 	"text/template"
 
 	"github.com/getkin/kin-openapi/openapi3"
@@ -34,7 +35,7 @@ func main() {
 	flag.Parse()
 
 	if version {
-		fmt.Println("v0.6.1")
+		fmt.Println("v0.6.2")
 		return
 	}
 
@@ -144,6 +145,7 @@ var XTmplFuncs = template.FuncMap{
 		}
 		return ret
 	},
+	"contains": strings.Contains,
 }
 
 func generateCheckRules(doc *openapi3.T) (string, error) {
